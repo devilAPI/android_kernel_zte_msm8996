@@ -844,6 +844,17 @@ config INPUT_STMVL53L0
 	 To compile this driver as a module, choose M here: the
 	 module will be called stmvl53l0.
 
+config SENSORS_HALL_AH1898
+	tristate "AH1898 hall sensor"
+	depends on OF_GPIO
+	help
+	  Say Y here to enable the AH1898 hall sensor used for flip cover
+	  detection on the ZTE Axon 7. The sensor GPIO is reported as the
+	  SW_LID input switch.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called ah1898.
+
 config HALL_SWITCH
 	tristate "hall sensor for ZUK devices"
 	default y
