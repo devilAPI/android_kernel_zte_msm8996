@@ -12,6 +12,12 @@ menuconfig USB_TYPEC
 
 if USB_TYPEC
 
+config USB_HD3SS3220
+	bool "TI HD3SS3220 Type-C controller"
+	help
+	  Say Y here if you have a TI HD3SS3220 Type-C DRP port controller,
+	  as fitted to some ZTE Axon 7 boards.
+
 config USB_PI5USB302
 	bool "Pericom PI5USB302 Type-C controller"
 	help
