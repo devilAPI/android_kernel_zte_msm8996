@@ -108,6 +108,8 @@ source "drivers/usb/isp1760/Kconfig"
 
 source "drivers/usb/pd/Kconfig"
 
+source "drivers/usb/typec/Kconfig"
+
 comment "USB port drivers"
 
 if USB

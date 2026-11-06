@@ -1,0 +1,22 @@
+#
+# USB Type-C controller drivers from the ZTE Axon 7 3.18 kernel
+#
+
+menuconfig USB_TYPEC
+	bool "USB Type-C CC/mux controllers (ZTE Axon 7)"
+	depends on I2C
+	help
+	  Drivers for the I2C USB Type-C configuration channel and mux
+	  controllers fitted to the ZTE Axon 7. They set up the controller
+	  at boot and export its state under /sys/class/type-c/chip.
+
+if USB_TYPEC
+
+config USB_PI5USB302
+	bool "Pericom PI5USB302 Type-C controller"
+	help
+	  Say Y here if you have a Pericom PI5USB302 Type-C
+	  controller (its chip info reads Pi5usb30213), as fitted to some
+	  ZTE Axon 7 boards.
+
+endif
