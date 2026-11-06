@@ -1,0 +1,115 @@
+/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2016 ZTE Corporation.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/*
+ * ZTE Axon 7 touch screen, capacitive keys and volume keys (from the ZTE
+ * 3.18 kernel, touch-key-backlight-ailsa_ii.dtsi). BLSP2 QUP6 (i2c_12) is
+ * already defined in msm8996.dtsi in 4.4.
+ *
+ * The Synaptics node uses the binding of the in-tree 4.4 synaptics_dsx
+ * driver, which matches ZTE's. The capacitive keys are 0D buttons of the
+ * touch controller (synaptics,cap-button-codes: back, home, app switch).
+ */
+
+&soc {
+	i2c@75ba000 {
+		synaptics@20 {
+			compatible = "synaptics,dsx-i2c";
+			reg = <0x20>;
+			interrupt-parent = <&tlmm>;
+			interrupts = <125 0x2008>;
+			vdd_ana-supply = <&pm8994_l14>;
+			vcc_i2c-supply = <&pm8994_l22>;
+			synaptics,pwr-reg-name = "vdd_ana";
+			synaptics,bus-reg-name = "vcc_i2c";
+			pinctrl-names = "pmx_ts_active", "pmx_ts_suspend";
+			pinctrl-0 = <&ts_active>;
+			pinctrl-1 = <&ts_suspend>;
+			synaptics,reset-gpio = <&tlmm 89 0x00>;
+			synaptics,irq-gpio = <&tlmm 125 0x2008>;
+			synaptics,irq-on-state = <0>;
+			synaptics,irq-flags = <0x2008>; /* IRQF_ONESHOT | IRQF_TRIGGER_LOW */
+			synaptics,power-delay-ms = <100>;
+			synaptics,reset-delay-ms = <100>;
+			synaptics,reset-on-state = <0>;
+			synaptics,reset-active-ms = <20>;
+			synaptics,cap-button-codes = <158 102 187>;
+		};
+
+		/* NDT force sensor (ZTE ndt_stress driver, not ported yet) */
+		ndt_stress@50 {
+			compatible = "ndt,stress-i2c";
+			reg = <0x50>;
+			interrupt-parent = <&tlmm>;
+			interrupts = <122 0x2008>;
+			pinctrl-names = "default", "sleep";
+			pinctrl-0 = <&ndt_power_active &ndt_int_active
+				     &ndt_reset_active>;
+			pinctrl-1 = <&ndt_power_suspend &ndt_int_suspend
+				     &ndt_reset_suspend>;
+			ndt,irq-gpio = <&tlmm 122 0x00>;
+			ndt,irq-on-state = <0>;
+			ndt,irq-flags = <0x2008>;
+			ndt,power-gpio = <&tlmm 69 0x00>;
+			ndt,power-on-state = <1>;
+			ndt,power-delay-ms = <20>;
+			ndt,reset-gpio = <&tlmm 121 0x00>;
+			ndt,reset-on-state = <0>;
+			ndt,reset-active-ms = <10>;
+			ndt,reset-delay-ms = <10>;
+		};
+	};
+
+	/*
+	 * ZTE virtual-key map (gen_vkeys_zte.c, not ported). Not needed while
+	 * the keys come in as touch controller 0D buttons.
+	 */
+	gen-vkeys {
+		compatible = "zte,gen-vkeys";
+		label = "synaptics_dsx";
+		zte,disp-maxy_px = <2560>;
+		zte,disp-maxy_mm = <1210>;	/* 0.1 mm */
+		zte,disp-maxx_mm = <680>;	/* 0.1 mm */
+		zte,x1 = <205>;
+		zte,x2 = <345>;
+		zte,x3 = <485>;
+		zte,lcd_offset = <25>;
+		zte,y_max_offset = <150>;
+		zte,dx = <100>;
+		zte,key-codes = <158 102 187>;
+	};
+
+	/* PM8994 GPIO 2 is the lower key (volume down), GPIO 3 the upper one */
+	gpio_keys {
+		compatible = "gpio-keys";
+		input-name = "gpio-keys";
+
+		vol_up {
+			label = "volume_up";
+			gpios = <&pm8994_gpios 2 0x1>;
+			linux,input-type = <1>;
+			linux,code = <114>;	/* KEY_VOLUMEDOWN */
+			gpio-key,wakeup;
+			debounce-interval = <15>;
+		};
+
+		vol_down {
+			label = "volume_down";
+			gpios = <&pm8994_gpios 3 0x1>;
+			linux,input-type = <1>;
+			linux,code = <115>;	/* KEY_VOLUMEUP */
+			gpio-key,wakeup;
+			debounce-interval = <15>;
+		};
+	};
+};

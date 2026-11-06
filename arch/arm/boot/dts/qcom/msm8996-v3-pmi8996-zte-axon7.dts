@@ -1,0 +1,56 @@
+/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+ * Copyright (C) 2016 ZTE Corporation.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+/*
+ * ZTE Axon 7 (A2017G, codename ailsa_ii): MSM8996 v3 + PMI8996.
+ *
+ * Port of zte-msm8996-v3-pmi8996-ailsa_ii.dts from ZTE's 3.18 kernel.
+ * qcom,msm-id <246 0x30001> (msm8996-v3.dtsi), qcom,pmic-id
+ * (msm8996.dtsi) and qcom,board-id <100 0> are the values of the 3.18 DTB,
+ * so ZTE's bootloader selects this DTB.
+ */
+
+/dts-v1/;
+
+#include "msm8996-v3.dtsi"
+#include "msm-pmi8996.dtsi"
+#include "msm8996-zte-axon7.dtsi"
+#include "msm8996-zte-axon7-common.dtsi"
+#include "msm8996-zte-axon7-touch.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. MSM 8996 v3 + PMI8996 ZTE Axon 7";
+	compatible = "zte,axon7", "qcom,msm8996-mtp", "qcom,msm8996", "qcom,mtp";
+	qcom,board-id = <100 0>;
+};
+
+&soc {
+	/* ZTE misc driver (drivers/power/zte_misc.c, not ported) */
+	zte_misc {
+		compatible = "zte-misc";
+	};
+
+	/* Hall sensor (flip cover), AH1898 on gpio 124 */
+	hall_sensor {
+		compatible = "ah,hall_ic";
+		ah,gpio_irq = <&tlmm 124 0x0>;
+		linux,name = "hall_sensor";
+		pinctrl-names = "default";
+		pinctrl-0 = <&zte_hall_gpio_active>;
+	};
+};
+
+&pmi8994_charger {
+	qcom,fastchg-current-comp = <900>;
+	qcom,thermal-mitigation = <2500 1500 500 0>;
+};

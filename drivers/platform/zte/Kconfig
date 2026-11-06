@@ -1,0 +1,19 @@
+# ZTE configuration options
+
+config MACH_ZTE
+	bool
+	depends on ARCH_QCOM
+	help
+	  Support for ZTE products
+
+menu "ZTE board selection"
+
+config MACH_ZTE_AXON7
+	bool "ZTE Axon 7 (ailsa_ii)"
+	depends on ARCH_MSM8996
+	select MACH_ZTE
+	help
+	  Support for the ZTE Axon 7 (A2017, A2017G, A2017U; codename
+	  ailsa_ii). Builds only the Axon 7 device tree.
+
+endmenu
