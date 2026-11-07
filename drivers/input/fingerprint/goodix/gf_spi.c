@@ -578,7 +578,14 @@ static void gf_reg_key_kernel(struct gf_dev *gf_dev)
 		pr_warn("Failed to register GF as input device.\n");
 }
 
-extern bool is_goodix_fp(void);
+/*
+ * ZTE's zte_misc.c (not ported) picked the sensor from a boot parameter and
+ * fell back to GF3118M, the Axon 7's sensor; there is only that one here.
+ */
+static bool is_goodix_fp(void)
+{
+	return true;
+}
 static struct class *gf_class;
 #if defined(USE_SPI_BUS)
 static int gf_probe(struct spi_device *spi)
