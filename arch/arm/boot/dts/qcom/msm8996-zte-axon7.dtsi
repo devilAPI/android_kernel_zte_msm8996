@@ -560,7 +560,7 @@
 };
 
 &soc {
-	/* Goodix GF3118M fingerprint sensor (TEE driver, not ported yet) */
+	/* Goodix GF3118M fingerprint sensor (drivers/input/fingerprint/goodix; the TEE reads the sensor) */
 	goodix_gf3118 {
 		compatible = "goodix,fingerprint";
 		spi-max-frequency = <4800000>;

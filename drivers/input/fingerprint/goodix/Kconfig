@@ -1,0 +1,7 @@
+config FINGERPRINT_GOODIX_GF3118M
+	tristate "Goodix GF3118M fingerprint driver (ZTE Axon 7)"
+	depends on INPUT_FINGERPRINT
+	help
+	  GPIO/IRQ/power control and the /dev/goodix_fp interface for the
+	  Goodix GF3118M sensor; the sensor itself is read by the TEE
+	  (from the ZTE 3.18 kernel).

@@ -18,3 +18,5 @@ config FINGERPRINT_FPC1020_TA
 	  If unsure, say N.
 
 	  To compile this driver as a module, choose M here.
+
+source "drivers/input/fingerprint/goodix/Kconfig"
