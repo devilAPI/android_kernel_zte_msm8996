@@ -51,6 +51,6 @@
 };
 
 &pmi8994_charger {
-	qcom,fastchg-current-comp = <900>;
+	qcom,fastchg-current-comp = <1200>;	/* index 2, as ZTE 3.18 wrote with its 900 (PMI8994 table) */
 	qcom,thermal-mitigation = <2500 1500 500 0>;
 };

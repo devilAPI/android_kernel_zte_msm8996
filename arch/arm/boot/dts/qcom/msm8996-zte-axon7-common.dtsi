@@ -771,7 +771,7 @@
 	qcom,iterm-ma = <150>;
 	qcom,fastchg-current-ma = <3000>;
 	qcom,float-voltage-mv = <4400>;
-	qcom,fastchg-current-comp = <900>;
+	qcom,fastchg-current-comp = <1200>;	/* index 2, as ZTE 3.18 wrote with its 900 (PMI8994 table) */
 	qcom,float-voltage-comp = <10>;
 	qcom,resume-delta-mv = <100>;
 	qcom,parallel-usb-min-current-ma = <1000>;
