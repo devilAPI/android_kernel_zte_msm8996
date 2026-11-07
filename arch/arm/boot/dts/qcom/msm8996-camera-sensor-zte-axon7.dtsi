@@ -14,7 +14,7 @@
 /*
  * ZTE Axon 7 cameras (from the ZTE 3.18 kernel, zte-camera-sensor-mtp.dtsi):
  * camera@0 rear main (OIS), camera@1 rear second, camera@2 front.
- * The zte,eeprom-* nodes need ZTE's zte_eeprom driver (not ported yet).
+ * The zte,eeprom-* nodes use ZTE's zte_eeprom driver (camera_v2/sensor/eeprom).
  */
 
 &soc {
