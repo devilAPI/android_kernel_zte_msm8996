@@ -557,6 +557,21 @@ static int msm_eeprom_get_dt_data(struct msm_eeprom_ctrl_t *e_ctrl)
 		kfree(gpio_array);
 	}
 
+	/*
+	 * 4.4: msm_camera_power_up() looks up a GPIO for every supply step
+	 * (msm_cam_sensor_handle_reg_gpio) without checking gpio_num_info; a
+	 * node without gpios (eeprom2, s5k2t8) crashed the probe. An empty
+	 * table (no valid entries) makes that step a no-op.
+	 */
+	if (!gconf->gpio_num_info) {
+		gconf->gpio_num_info = kzalloc(
+			sizeof(struct msm_camera_gpio_num_info), GFP_KERNEL);
+		if (!gconf->gpio_num_info) {
+			rc = -ENOMEM;
+			goto ERROR3;
+		}
+	}
+
 	return rc;
 ERROR4:
 	kfree(gpio_array);
