@@ -39,10 +39,15 @@
 		 */
 		/delete-node/ cont_splash_mem_hdmi@bdd00000;
 
-		/* Same region ZTE's 3.18 kernel used for ramoops */
-		ramoops_mem: ramoops_mem@92900000 {
+		/*
+		 * Where ZTE's 3.18 kernel (TWRP) and mainline (postmarketOS)
+		 * keep ramoops, with their layout: the next boot of any of the
+		 * three can read the log (dmesg zones, console, ftrace, pmsg).
+		 */
+		ramoops_mem: ramoops_mem@bfc00000 {
 			label = "ramoops_mem";
-			reg = <0x0 0x92900000 0x0 0x00100000>;
+			reg = <0x0 0xbfc00000 0x0 0x00400000>;
+			no-map;
 		};
 	};
 };
@@ -886,10 +891,10 @@
 		status = "ok";
 		memory-region = <&ramoops_mem>;
 
-		console-size = <0x0 0x00080000>;
-		pmsg-size = <0x0 0x00040000>;
+		console-size = <0x0 0x00100000>;
+		pmsg-size = <0x0 0x00100000>;
 		record-size = <0x0 0x00008000>;
-		ftrace-size = <0x0 0x00020000>;
+		ftrace-size = <0x0 0x00100000>;
 	};
 };
 
