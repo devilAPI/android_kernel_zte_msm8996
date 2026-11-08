@@ -76,6 +76,15 @@ source "drivers/nfc/nfcmrvl/Kconfig"
 source "drivers/nfc/st21nfca/Kconfig"
 source "drivers/nfc/st-nci/Kconfig"
 source "drivers/nfc/nxp-nci/Kconfig"
+config PN5XX_NFC
+	tristate "NXP PN5XX based driver (ZTE Axon 7)"
+	depends on I2C
+	select CRC_CCITT
+	default n
+	---help---
+	  NXP PN5xx/PN548 NFC controller on I2C: /dev/pn5xx for the NXP NFC
+	  HAL (from the ZTE 3.18 kernel).
+
 source "drivers/nfc/s3fwrn5/Kconfig"
 endmenu
 

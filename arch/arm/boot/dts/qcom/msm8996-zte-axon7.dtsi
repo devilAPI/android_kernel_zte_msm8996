@@ -787,7 +787,7 @@
 };
 
 &i2c_8 { /* BLSP2 QUP2 */
-	/* NXP PN548 NFC. nxp,pn5xx binding of ZTE's pn5xx_i2c driver (not ported) */
+	/* NXP PN548 NFC: ZTE's pn5xx_i2c driver (drivers/nfc/pn5xx_i2c.c) */
 	pn5xx@28 {
 		compatible = "nxp,pn5xx";
 		reg = <0x28>;
