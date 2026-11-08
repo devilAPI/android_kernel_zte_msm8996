@@ -577,11 +577,12 @@ static int32_t msm_flash_prepare(
 	CDBG("%s:%d: State : %d\n",
 		__func__, __LINE__, flash_ctrl->flash_state);
 
-	if (flash_ctrl->switch_trigger == NULL) {
-		pr_err("%s:%d Invalid argument\n",
-				__func__, __LINE__);
-		return -EINVAL;
-	}
+	/*
+	 * The Axon 7 flash node has no switch trigger (the ZTE 3.18 driver had
+	 * no regulator prepare step at all): nothing to prepare.
+	 */
+	if (flash_ctrl->switch_trigger == NULL)
+		return 0;
 
 	if (flash_ctrl->flash_state == MSM_CAMERA_FLASH_INIT &&
 		flash_ctrl->is_regulator_enabled == 0) {
@@ -757,6 +758,7 @@ static int32_t msm_flash_config(struct msm_flash_ctrl_t *flash_ctrl,
 		break;
 	case CFG_FLASH_LOW:
 		if ((flash_ctrl->flash_state == MSM_CAMERA_FLASH_OFF) ||
+			(flash_ctrl->flash_state == MSM_CAMERA_FLASH_LOW) ||
 			(flash_ctrl->flash_state == MSM_CAMERA_FLASH_INIT)) {
 			rc = flash_ctrl->func_tbl->camera_flash_low(
 				flash_ctrl, flash_data);
@@ -855,6 +857,10 @@ static long msm_flash_subdev_ioctl(struct v4l2_subdev *sd,
 	switch (cmd) {
 	case VIDIOC_MSM_SENSOR_GET_SUBDEV_ID:
 		return msm_flash_get_subdev_id(fctrl, argp);
+	case VIDIOC_MSM_FLASH_HW_ID:
+		/* ZTE camera ABI: 0 = default (dual-LED) board */
+		*(uint32_t *)arg = 0;
+		return 0;
 	case VIDIOC_MSM_FLASH_CFG:
 		return msm_flash_config(fctrl, argp);
 	case MSM_SD_NOTIFY_FREEZE:
