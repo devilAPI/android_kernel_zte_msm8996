@@ -241,10 +241,20 @@ void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 	mdss_dsi_cmdlist_put(ctrl, &cmdreq);
 }
 
+/*
+ * Brightness as ZTE's 3.18 driver sends it to the Axon 7's Samsung S6E3HA3:
+ * 0x51 three times, then 0x53 (0x20 for the first two updates after the
+ * panel is switched on, 0x28 = dimming afterwards), all in one HS batch.
+ * A single 0x51 (the stock code) has no effect on this panel.
+ */
 static char led_pwm1[2] = {0x51, 0x0};	/* DTYPE_DCS_WRITE1 */
-static struct dsi_cmd_desc backlight_cmd = {
-	{DTYPE_DCS_WRITE1, 1, 0, 0, 1, sizeof(led_pwm1)},
-	led_pwm1
+static char led_pwm2[2] = {0x53, 0x20};	/* DTYPE_DCS_WRITE1 */
+static char power_on_flag;
+static struct dsi_cmd_desc backlight_cmd[4] = {
+	{{DTYPE_DCS_WRITE1, 0, 0, 0, 0, sizeof(led_pwm1)}, led_pwm1},
+	{{DTYPE_DCS_WRITE1, 0, 0, 0, 0, sizeof(led_pwm1)}, led_pwm1},
+	{{DTYPE_DCS_WRITE1, 0, 0, 0, 0, sizeof(led_pwm1)}, led_pwm1},
+	{{DTYPE_DCS_WRITE1, 1, 0, 0, 0, sizeof(led_pwm2)}, led_pwm2},
 };
 
 static void mdss_dsi_panel_bklt_dcs(struct mdss_dsi_ctrl_pdata *ctrl, int level)
@@ -258,21 +268,30 @@ static void mdss_dsi_panel_bklt_dcs(struct mdss_dsi_ctrl_pdata *ctrl, int level)
 			return;
 	}
 
-	pr_debug("%s: level=%d\n", __func__, level);
+	/* ZTE's level curve (0-255 in, 0-255 out) */
+	if (level > 11)
+		level = (15 * level * level + 6059 * level + 29580) / 10000;
+	else if (level == 11)
+		level = 10;
+	pr_debug("%s: level=%d flag=%d\n", __func__, level, power_on_flag);
 
 	led_pwm1[1] = (unsigned char)level;
+	if (power_on_flag == 1) {
+		led_pwm2[1] = 0x20;
+		power_on_flag = 2;
+	} else if (power_on_flag == 2) {
+		led_pwm2[1] = 0x20;
+		power_on_flag = 0;
+	} else {
+		led_pwm2[1] = 0x28;
+	}
 
 	memset(&cmdreq, 0, sizeof(cmdreq));
-	cmdreq.cmds = &backlight_cmd;
-	cmdreq.cmds_cnt = 1;
-	cmdreq.flags = CMD_REQ_COMMIT | CMD_CLK_CTRL | CMD_REQ_DCS;
+	cmdreq.cmds = backlight_cmd;
+	cmdreq.cmds_cnt = ARRAY_SIZE(backlight_cmd);
+	cmdreq.flags = CMD_REQ_COMMIT | CMD_CLK_CTRL | CMD_REQ_HS_MODE;
 	cmdreq.rlen = 0;
 	cmdreq.cb = NULL;
-
-	if (ctrl->bklt_dcs_op_mode == DSI_HS_MODE)
-		cmdreq.flags |= CMD_REQ_HS_MODE;
-	else
-		cmdreq.flags |= CMD_REQ_LP_MODE;
 
 	mdss_dsi_cmdlist_put(ctrl, &cmdreq);
 }
@@ -981,6 +1000,7 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 			goto end;
 	}
 
+	power_on_flag = 1;
 	on_cmds = &ctrl->on_cmds;
 
 	if ((pinfo->mipi.dms_mode == DYNAMIC_MODE_SWITCH_IMMEDIATE) &&
