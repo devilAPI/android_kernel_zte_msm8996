@@ -905,3 +905,8 @@
 		/delete-node/ vbmeta;
 	};
 };
+
+/* gpio 64 is the AK4961 reset (akm,cdc-reset-gpio); no WCD9335 reset pin */
+&wcd_rst_gpio {
+	status = "disabled";
+};

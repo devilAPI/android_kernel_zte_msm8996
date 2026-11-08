@@ -116,6 +116,9 @@ bool          clk_run = false;
 
 /*add nfc id information begin*/
 
+/* wake enable/disable must stay balanced (4.4 warns otherwise) */
+static bool pn5xx_irq_wake;
+
 static char nfc_id[51] = "NXP-PN65T-NA-NA-NA";
 static int nfc_id_read_proc(struct seq_file *m, void *v)
 {
@@ -332,7 +335,9 @@ static long pn5xx_dev_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 			gpio_set_value(pn5xx_dev->firm_gpio, 0);
 			gpio_set_value(pn5xx_dev->ven_gpio, 1);
 			msleep(20);
-			irq_set_irq_wake(pn5xx_dev->client->irq, 1);
+			if (!pn5xx_irq_wake &&
+			    !irq_set_irq_wake(pn5xx_dev->client->irq, 1))
+				pn5xx_irq_wake = true;
 #ifdef CONFIG_NFC_ENABLE_BB_CLK2
 			if (clk_run == false) {
 			   msleep(20);
@@ -351,7 +356,10 @@ static long pn5xx_dev_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 			gpio_set_value(pn5xx_dev->ven_gpio, 0);
 
 			msleep(20);
-			irq_set_irq_wake(pn5xx_dev->client->irq, 0);
+			if (pn5xx_irq_wake) {
+				irq_set_irq_wake(pn5xx_dev->client->irq, 0);
+				pn5xx_irq_wake = false;
+			}
 #ifdef CONFIG_NFC_ENABLE_BB_CLK2
 			if (clk_run == true) {
 				msleep(20);

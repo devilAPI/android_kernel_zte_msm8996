@@ -775,3 +775,9 @@ static void ak49xx_irq_drv_exit(void)
 }
 module_exit(ak49xx_irq_drv_exit);
 #endif /* CONFIG_OF */
+
+#ifdef CONFIG_OF
+#include <linux/irqchip.h>
+/* 4.4: the domain of akm,ak49xx-irq is made here (ZTE's 3.18 did it in irq-msm.c) */
+IRQCHIP_DECLARE(ak49xx_irq, "akm,ak49xx-irq", ak49xx_irq_of_init);
+#endif
