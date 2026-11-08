@@ -17,6 +17,7 @@
 #include "mdss_mdp.h"
 #include "mdss_mdp_pp.h"
 #include <linux/uaccess.h>
+#include <linux/moduleparam.h>
 #include <linux/spinlock.h>
 #include <linux/delay.h>
 #include <linux/msm-bus.h>
@@ -2384,6 +2385,9 @@ static void pp_dspp_opmode_config(struct mdss_mdp_ctl *ctl, u32 num,
 		*opmode |= MDSS_MDP_DSPP_OP_ARGC_LUT_EN;
 }
 
+static unsigned int axon7_dspp_clear[2];
+module_param_array_named(axon7_dspp_clear, axon7_dspp_clear, uint, NULL, 0644);
+
 static int pp_dspp_setup(u32 disp_num, struct mdss_mdp_mixer *mixer,
 					u32 pp_program_mask, int *op_mode)
 
@@ -2638,6 +2642,9 @@ static int pp_dspp_setup(u32 disp_num, struct mdss_mdp_mixer *mixer,
 		mutex_unlock(&ad->lock);
 	}
 
+	/* axon7 debugging: op-mode bits cleared per DSPP (dspp_clear=DSPP0,DSPP1) */
+	if (dspp_num < ARRAY_SIZE(axon7_dspp_clear))
+		opmode &= ~axon7_dspp_clear[dspp_num];
 	writel_relaxed(opmode, base + MDSS_MDP_REG_DSPP_OP_MODE);
 
 	if (dspp_num == MDSS_MDP_DSPP3)
