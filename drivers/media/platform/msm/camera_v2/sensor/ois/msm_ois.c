@@ -33,6 +33,16 @@ DEFINE_MSM_MUTEX(msm_ois_mutex);
 #endif
 
 static void msm_ois_fw_dl(struct work_struct *work);
+
+/*
+ * Axon 7: the BU63165 OIS locks up the rear camera's CCI bus once its
+ * firmware runs (gyro offsets read back 0, every later write times out),
+ * which also stopped the sensor and the autofocus. With axon7_ois_off the
+ * OIS commands succeed without touching the chip: no stabilisation, but a
+ * working camera.
+ */
+static bool axon7_ois_off = true;
+module_param(axon7_ois_off, bool, 0644);
 static struct v4l2_file_operations msm_ois_v4l2_subdev_fops;
 static int32_t msm_ois_power_up(struct msm_ois_ctrl_t *o_ctrl);
 static int32_t msm_ois_power_down(struct msm_ois_ctrl_t *o_ctrl);
@@ -441,7 +451,7 @@ static int msm_ois_init(struct msm_ois_ctrl_t *o_ctrl)
 			pr_err("cci_init failed\n");
 	}
 
-	if (!g_i2c_ctrl) {
+	if (!g_i2c_ctrl && !axon7_ois_off) {
 		g_i2c_ctrl = o_ctrl;
 		o_ctrl->work_queue =
 			alloc_workqueue("ois_fw_dl", WQ_HIGHPRI|WQ_UNBOUND, 0);
@@ -589,6 +599,12 @@ static int32_t msm_ois_config(struct msm_ois_ctrl_t *o_ctrl,
 	mutex_lock(o_ctrl->ois_mutex);
 	CDBG("Enter\n");
 	CDBG("%s type %d\n", __func__, cdata->cfgtype);
+	if (axon7_ois_off && (cdata->cfgtype == CFG_OIS_CONTROL ||
+	    cdata->cfgtype == CFG_OIS_I2C_WRITE_SEQ_TABLE ||
+	    cdata->cfgtype == CFG_OIS_READ)) {
+		mutex_unlock(o_ctrl->ois_mutex);
+		return 0;
+	}
 	switch (cdata->cfgtype) {
 	case CFG_OIS_INIT:
 		rc = msm_ois_init(o_ctrl);
@@ -690,6 +706,8 @@ static int32_t msm_ois_config_download(struct msm_ois_ctrl_t *o_ctrl,
 		pr_err("failed: Invalid data\n");
 		return -EINVAL;
 	}
+	if (axon7_ois_off)
+		return 0;
 	mutex_lock(o_ctrl->ois_mutex);
 	CDBG("Enter\n");
 	CDBG("%s type %d\n", __func__, cdata->cfgtype);
