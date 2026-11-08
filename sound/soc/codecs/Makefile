@@ -439,3 +439,4 @@ obj-y += msm_sdw/
 obj-y	+= tfa98xx/
 snd-soc-ak4961-objs := ak4961.o ak4961-tables.o
 obj-$(CONFIG_SND_SOC_AK4961)	+= snd-soc-ak4961.o
+obj-$(CONFIG_SND_SOC_AK4490)	+= ak4490/

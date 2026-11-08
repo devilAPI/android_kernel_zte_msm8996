@@ -99,7 +99,7 @@
 			ak4490,hifi_pop_gpio = <&tlmm 74 0>;
 		};
 
-		/* Intersil ISL98608 DAC power supply (no driver yet) */
+		/* Intersil ISL98608 DAC power supply (sound/soc/codecs/ak4490/isl98608.c) */
 		isl98608@29 {
 			compatible = "isl98608";
 			reg = <0x29>;
