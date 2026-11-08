@@ -327,7 +327,12 @@ module_param_named(
 	first_est_dump, fg_est_dump, int, 00600
 );
 
-static char *fg_batt_type;
+/*
+ * Axon 7: ZTE selects the battery profile by name, not by the battery-ID
+ * resistor (batterydata-zte-p996a01-3250mah.dtsi: "no used zte_pm"). Without
+ * it no profile matched and the fuel gauge reported a fixed 50 %.
+ */
+static char *fg_batt_type = "ZTE_BATTERY_DATA_ID_1";
 module_param_named(
 	battery_type, fg_batt_type, charp, 00600
 );
