@@ -28,6 +28,62 @@ DEFINE_MSM_MUTEX(msm_flash_mutex);
 static struct v4l2_file_operations msm_flash_v4l2_subdev_fops;
 static struct led_trigger *torch_trigger;
 
+/*
+ * Axon 7: torch strength. axon7_torch_pct (1-100, default 100) scales the
+ * torch current of every torch-on (MSM_CAMERA_LED_LOW). Writing it while the
+ * torch is on re-applies the scaled current right away, so the QS flashlight
+ * tile's strength slider (persist.sys.axon7.torch_pct, copied here by init)
+ * changes the brightness live.
+ */
+static unsigned int axon7_torch_pct = 100;
+static DEFINE_MUTEX(axon7_torch_lock);
+static struct msm_flash_ctrl_t *axon7_torch_ctrl;	/* torch on: its ctrl */
+static uint32_t axon7_torch_curr[MAX_LED_TRIGGERS];	/* unscaled currents */
+
+static uint32_t axon7_torch_scale(uint32_t curr)
+{
+	uint32_t c = curr * axon7_torch_pct / 100;
+
+	return (curr && !c) ? 1 : c;
+}
+
+static int axon7_torch_pct_set(const char *val, const struct kernel_param *kp)
+{
+	unsigned int v;
+	int i, rc = kstrtouint(val, 0, &v);
+
+	if (rc)
+		return rc;
+	if (v < 1 || v > 100)
+		return -EINVAL;
+	mutex_lock(&axon7_torch_lock);
+	axon7_torch_pct = v;
+	if (axon7_torch_ctrl)
+		for (i = 0; i < axon7_torch_ctrl->torch_num_sources; i++)
+			if (axon7_torch_ctrl->torch_trigger[i] &&
+				axon7_torch_curr[i])
+				led_trigger_event(
+					axon7_torch_ctrl->torch_trigger[i],
+					axon7_torch_scale(axon7_torch_curr[i]));
+	mutex_unlock(&axon7_torch_lock);
+	return 0;
+}
+
+static const struct kernel_param_ops axon7_torch_pct_ops = {
+	.set = axon7_torch_pct_set,
+	.get = param_get_uint,
+};
+module_param_cb(axon7_torch_pct, &axon7_torch_pct_ops, &axon7_torch_pct, 0644);
+MODULE_PARM_DESC(axon7_torch_pct, "torch strength in percent (1-100)");
+
+static void axon7_torch_forget(void)
+{
+	mutex_lock(&axon7_torch_lock);
+	axon7_torch_ctrl = NULL;
+	memset(axon7_torch_curr, 0, sizeof(axon7_torch_curr));
+	mutex_unlock(&axon7_torch_lock);
+}
+
 static const struct of_device_id msm_flash_dt_match[] = {
 	{.compatible = "qcom,camera-flash", .data = NULL},
 	{}
@@ -389,6 +445,7 @@ static int32_t msm_flash_off(struct msm_flash_ctrl_t *flash_ctrl,
 
 	CDBG("Enter\n");
 
+	axon7_torch_forget();
 	for (i = 0; i < flash_ctrl->flash_num_sources; i++)
 		if (flash_ctrl->flash_trigger[i])
 			led_trigger_event(flash_ctrl->flash_trigger[i], 0);
@@ -623,6 +680,8 @@ static int32_t msm_flash_low(
 			led_trigger_event(flash_ctrl->flash_trigger[i], 0);
 
 	/* Turn on flash triggers */
+	mutex_lock(&axon7_torch_lock);
+	axon7_torch_ctrl = flash_ctrl;
 	for (i = 0; i < flash_ctrl->torch_num_sources; i++) {
 		if (flash_ctrl->torch_trigger[i]) {
 			max_current = flash_ctrl->torch_max_current[i];
@@ -636,10 +695,12 @@ static int32_t msm_flash_low(
 					curr);
 			}
 			CDBG("low_flash_current[%d] = %d", i, curr);
+			axon7_torch_curr[i] = curr;
 			led_trigger_event(flash_ctrl->torch_trigger[i],
-				curr);
+				axon7_torch_scale(curr));
 		}
 	}
+	mutex_unlock(&axon7_torch_lock);
 	if (flash_ctrl->switch_trigger)
 		led_trigger_event(flash_ctrl->switch_trigger, 1);
 	CDBG("Exit\n");
@@ -655,6 +716,7 @@ static int32_t msm_flash_high(
 	int32_t i = 0;
 
 	/* Turn off torch triggers */
+	axon7_torch_forget();
 	for (i = 0; i < flash_ctrl->torch_num_sources; i++)
 		if (flash_ctrl->torch_trigger[i])
 			led_trigger_event(flash_ctrl->torch_trigger[i], 0);
