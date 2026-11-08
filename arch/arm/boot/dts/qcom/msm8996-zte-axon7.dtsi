@@ -327,6 +327,21 @@
 #include "msm8996-mdss-panels.dtsi"
 #include "dsi-panel-zte-samsung-s6e3ha3-5p5-wqhd-dualmipi-cmd.dtsi"
 
+/*
+ * Power key debounce as in the ZTE 3.18 kernel. msm-pm8994.dtsi asks for
+ * software debouncing (qcom,pon-sw-debounce), which this qpnp-power-on driver
+ * does not implement, leaving only the 62 us PMIC debounce: the key line then
+ * reported phantom presses (the phone woke up or locked itself on its own).
+ */
+&spmi_bus {
+	qcom,pm8994@0 {
+		qcom,power-on@800 {
+			qcom,pon-dbc-delay = <15625>;
+			qcom,kpdpwr-sw-debounce;
+		};
+	};
+};
+
 &mdss_mdp {
 	qcom,mdss-pref-prim-intf = "dsi";
 };
