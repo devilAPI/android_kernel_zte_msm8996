@@ -35,13 +35,18 @@ DEFINE_MSM_MUTEX(msm_ois_mutex);
 static void msm_ois_fw_dl(struct work_struct *work);
 
 /*
- * Axon 7: the BU63165 OIS locks up the rear camera's CCI bus once its
- * firmware runs (gyro offsets read back 0, every later write times out),
- * which also stopped the sensor and the autofocus. With axon7_ois_off the
- * OIS commands succeed without touching the chip: no stabilisation, but a
- * working camera.
+ * Axon 7: msm_ois_fw_dl() is the Xiaomi Mi 5's in-kernel firmware download
+ * and calibration for its BU63165 (Xiaomi addresses and parameters). ZTE's
+ * kernel has none: ZTE's camera daemon (libois_bu63165_*) downloads the
+ * firmware itself through the OIS commands. Run on the Axon 7's module, the
+ * Xiaomi routine left the OIS hanging the rear camera's CCI bus.
+ *
+ * axon7_xiaomi_ois_fw: run that Xiaomi download (default off).
+ * axon7_ois_off: also ignore the daemon's OIS commands (no stabilisation).
  */
-static bool axon7_ois_off = true;
+static bool axon7_xiaomi_ois_fw;
+module_param(axon7_xiaomi_ois_fw, bool, 0644);
+static bool axon7_ois_off;
 module_param(axon7_ois_off, bool, 0644);
 static struct v4l2_file_operations msm_ois_v4l2_subdev_fops;
 static int32_t msm_ois_power_up(struct msm_ois_ctrl_t *o_ctrl);
@@ -451,7 +456,7 @@ static int msm_ois_init(struct msm_ois_ctrl_t *o_ctrl)
 			pr_err("cci_init failed\n");
 	}
 
-	if (!g_i2c_ctrl && !axon7_ois_off) {
+	if (!g_i2c_ctrl && axon7_xiaomi_ois_fw) {
 		g_i2c_ctrl = o_ctrl;
 		o_ctrl->work_queue =
 			alloc_workqueue("ois_fw_dl", WQ_HIGHPRI|WQ_UNBOUND, 0);
