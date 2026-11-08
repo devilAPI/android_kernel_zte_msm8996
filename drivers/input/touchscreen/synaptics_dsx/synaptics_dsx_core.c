@@ -1650,14 +1650,17 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 static void synaptics_rmi4_report_key(struct synaptics_rmi4_data *rmi4_data,
 		int key, int status)
 {
-	if (key == KEY_MENU)
-		input_report_key(rmi4_data->input_dev,
-				rmi4_data->enable_reversed_keys ? KEY_MENU : KEY_BACK, status);
-	else if (key == KEY_BACK)
-		input_report_key(rmi4_data->input_dev,
-				rmi4_data->enable_reversed_keys ? KEY_BACK : KEY_MENU, status);
-	else
-		input_report_key(rmi4_data->input_dev, key, status);
+	/*
+	 * Axon 7 keys (cap-button-codes): back, home, app switch (KEY_F17).
+	 * The Xiaomi version turned KEY_BACK into KEY_MENU (Mi 5: menu, home,
+	 * back), which this input device never declares, so Back was dropped.
+	 * "Swap buttons" here swaps back and app switch.
+	 */
+	if (rmi4_data->enable_reversed_keys && key == KEY_BACK)
+		key = KEY_F17;
+	else if (rmi4_data->enable_reversed_keys && key == KEY_F17)
+		key = KEY_BACK;
+	input_report_key(rmi4_data->input_dev, key, status);
 }
 
 static void synaptics_rmi4_f1a_report(struct synaptics_rmi4_data *rmi4_data,
