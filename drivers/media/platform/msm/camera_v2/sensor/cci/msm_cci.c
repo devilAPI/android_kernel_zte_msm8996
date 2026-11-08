@@ -32,7 +32,8 @@
 #define CYCLES_PER_MICRO_SEC_DEFAULT 4915
 #define CCI_MAX_DELAY 1000000
 
-#define CCI_TIMEOUT msecs_to_jiffies(100)
+/* axon7: ZTE 3.18 value; sensor/OIS tables took longer than 100 ms */
+#define CCI_TIMEOUT msecs_to_jiffies(500)
 
 /* TODO move this somewhere else */
 #define MSM_CCI_DRV_NAME "msm_cci"
@@ -611,7 +612,7 @@ static int32_t msm_cci_data_queue(struct cci_device *cci_dev,
 	uint32_t read_val = 0;
 	uint32_t reg_offset;
 	uint32_t val = 0;
-	uint32_t max_queue_size;
+	uint32_t max_queue_size, queue_size = 0;
 	unsigned long flags;
 
 	if (i2c_cmd == NULL) {
@@ -664,6 +665,11 @@ static int32_t msm_cci_data_queue(struct cci_device *cci_dev,
 
 	max_queue_size = cci_dev->cci_i2c_queue_info[master][queue].
 			max_queue_size;
+	/* axon7 (ZTE 3.18): sequential writes may fill the whole queue */
+	if (c_ctrl->cmd == MSM_CCI_I2C_WRITE_SEQ)
+		queue_size = max_queue_size;
+	else
+		queue_size = max_queue_size/2;
 	reg_addr = i2c_cmd->reg_addr;
 
 	if (sync_en == MSM_SYNC_ENABLE && cci_dev->valid_sync &&
@@ -695,7 +701,7 @@ static int32_t msm_cci_data_queue(struct cci_device *cci_dev,
 		CDBG("%s line %d CUR_WORD_CNT_ADDR %d len %d max %d\n",
 			__func__, __LINE__, read_val, len, max_queue_size);
 		/* + 1 - space alocation for Report CMD*/
-		if ((read_val + len + 1) > max_queue_size/2) {
+		if ((read_val + len + 1) > queue_size) {
 			if ((read_val + len + 1) > max_queue_size) {
 				rc = msm_cci_process_full_q(cci_dev,
 					master, queue);
@@ -1437,6 +1443,12 @@ static int32_t msm_cci_init(struct v4l2_subdev *sd,
 	cci_dev->payload_size =
 			MSM_CCI_WRITE_DATA_PAYLOAD_SIZE_10;
 	cci_dev->support_seq_write = 0;
+	/* axon7 (ZTE 3.18): CCI v1.2+ takes 11-byte payloads and sequential writes */
+	if (cci_dev->hw_version >= 0x10020000) {
+		cci_dev->payload_size =
+			MSM_CCI_WRITE_DATA_PAYLOAD_SIZE_11;
+		cci_dev->support_seq_write = 1;
+	}
 	for (i = 0; i < NUM_MASTERS; i++) {
 		for (j = 0; j < NUM_QUEUES; j++) {
 			if (j == QUEUE_0) {
