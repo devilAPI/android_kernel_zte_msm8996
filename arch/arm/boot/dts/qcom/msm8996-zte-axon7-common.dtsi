@@ -124,7 +124,7 @@
 		status = "disabled";
 	};
 
-	/* AK4961 machine driver (sound/soc/msm/msm8996-ak496x.c, not ported) */
+	/* AK4961 machine driver (sound/soc/msm/msm8996-ak496x.c) */
 	sound-ak4961 {
 		compatible = "qcom,msm8996-asoc-snd-ak4961";
 		qcom,model = "msm8996-ak4961-snd-card";
@@ -401,7 +401,7 @@
 		status = "disabled";
 	};
 
-	/* AKM AK4961 audio codec (drivers/mfd/ak49xx-*, not ported) */
+	/* AKM AK4961 audio codec (drivers/mfd/ak49xx-*, sound/soc/codecs/ak4961.c) */
 	ak4961_codec {
 		compatible = "qcom,ak4961-slim-pgd";
 		elemental-addr = [00 02 61 49 DD 01];

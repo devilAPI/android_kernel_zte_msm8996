@@ -437,3 +437,5 @@ obj-$(CONFIG_SND_SOC_LM48560)	+= snd-soc-lm48560.o
 obj-y += sdm660_cdc/
 obj-y += msm_sdw/
 obj-y	+= tfa98xx/
+snd-soc-ak4961-objs := ak4961.o ak4961-tables.o
+obj-$(CONFIG_SND_SOC_AK4961)	+= snd-soc-ak4961.o

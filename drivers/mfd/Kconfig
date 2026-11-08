@@ -1525,6 +1525,17 @@ config MSM_CDC_SUPPLY
 	  power supply enable or disable. This driver acts as interface
 	  between codec and regulator framework.
 
+config AK4961_CODEC
+	tristate "AK4961 Codec (ZTE Axon 7)"
+	select SLIMBUS
+	select MFD_CORE
+	select SND_SOC_AK4961
+	default n
+	help
+	  AK49xx codec core (slimbus register access, IRQs, slave
+	  ports) for the AK4961 audio codec of the ZTE Axon 7 (from the
+	  ZTE 3.18 kernel).
+
 config WCD9XXX_CODEC_UTIL
 	tristate "WCD9XXX Codec Utils"
 	select MFD_CORE

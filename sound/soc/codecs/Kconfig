@@ -342,6 +342,10 @@ config SND_SOC_AK4642
 config SND_SOC_AK4671
 	tristate
 
+config SND_SOC_AK4961
+	tristate
+	select AUDIO_EXT_CLK
+
 config SND_SOC_AK5386
 	tristate "AKM AK5638 CODEC"
 

@@ -1780,6 +1780,16 @@ static bool msm_pcm_routing_route_is_set(u16 be_id, u16 fe_id)
 	return rc;
 }
 
+/* ZTE (AK4961 codec on axon7): is a voice call routed to SLIMBUS_0_RX? */
+bool msm_is_in_voice_call(void)
+{
+	return test_bit(MSM_FRONTEND_DAI_VOICEMMODE1,
+			&msm_bedais[MSM_BACKEND_DAI_SLIMBUS_0_RX].fe_sessions[0]) ||
+	       test_bit(MSM_FRONTEND_DAI_VOICEMMODE2,
+			&msm_bedais[MSM_BACKEND_DAI_SLIMBUS_0_RX].fe_sessions[0]);
+}
+EXPORT_SYMBOL(msm_is_in_voice_call);
+
 static void msm_pcm_routing_process_audio(u16 reg, u16 val, int set)
 {
 	int session_type, path_type, topology;
