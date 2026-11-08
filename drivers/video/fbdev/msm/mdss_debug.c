@@ -497,7 +497,12 @@ static ssize_t mdss_debug_base_offset_write(struct file *file,
 	if (cnt > (dbg->max_offset - off))
 		cnt = dbg->max_offset - off;
 
-	if (!mdss_debug_base_is_valid_range(off, cnt))
+	/* blocks without dump ranges (dsi0_ctrl, dsi1_phy, ...) are bounded
+	 * by max_offset above */
+	/* also the whole DSPP0/DSPP1 blocks (PA, gamut, PCC, dither) */
+	if (!list_empty(&dbg->dump_list) &&
+	    !(off >= 0x55000 && off + cnt <= 0x59000) &&
+	    !mdss_debug_base_is_valid_range(off, cnt))
 		return -EINVAL;
 
 	mutex_lock(&mdss_debug_lock);
