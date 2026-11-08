@@ -1478,6 +1478,8 @@ int msm_camera_power_up(struct msm_camera_power_ctrl_t *ctrl,
 			pr_err("%s:%d cannot set pin to active state",
 				__func__, __LINE__);
 	}
+	if (ctrl->ois_en_gpio > 0 && gpio_request(ctrl->ois_en_gpio, "ois_enable"))
+		pr_err("%s: request ois_en gpio %d failed\n", __func__, ctrl->ois_en_gpio);
 	for (index = 0; index < ctrl->power_setting_size; index++) {
 		CDBG("%s index %d\n", __func__, index);
 		power_setting = &ctrl->power_setting[index];
@@ -1552,6 +1554,13 @@ int msm_camera_power_up(struct msm_camera_power_ctrl_t *ctrl,
 				goto power_up_failed;
 			}
 			break;
+		case SENSOR_PMIC:
+			/* ZTE: the sensor's power sequence switches the OIS on */
+			if (ctrl->ois_en_gpio > 0 &&
+			    power_setting->seq_val == SENSOR_PMIC_GPIO_OIS)
+				gpio_direction_output(ctrl->ois_en_gpio,
+					(int) power_setting->config_val);
+			break;
 		case SENSOR_I2C_MUX:
 			if (ctrl->i2c_conf && ctrl->i2c_conf->use_i2c_mux)
 				msm_camera_enable_i2c_mux(ctrl->i2c_conf);
@@ -1612,6 +1621,11 @@ power_up_failed:
 			msm_cam_sensor_handle_reg_gpio(power_setting->seq_val,
 				ctrl->gpio_conf, GPIOF_OUT_INIT_LOW);
 			break;
+		case SENSOR_PMIC:
+			if (ctrl->ois_en_gpio > 0 &&
+			    power_setting->seq_val == SENSOR_PMIC_GPIO_OIS)
+				gpio_direction_output(ctrl->ois_en_gpio, 0);
+			break;
 		case SENSOR_I2C_MUX:
 			if (ctrl->i2c_conf && ctrl->i2c_conf->use_i2c_mux)
 				msm_camera_disable_i2c_mux(ctrl->i2c_conf);
@@ -1640,6 +1654,8 @@ power_up_failed:
 	msm_camera_request_gpio_table(
 		ctrl->gpio_conf->cam_gpio_req_tbl,
 		ctrl->gpio_conf->cam_gpio_req_tbl_size, 0);
+	if (ctrl->ois_en_gpio > 0)
+		gpio_free(ctrl->ois_en_gpio);
 	return rc;
 }
 
@@ -1742,6 +1758,12 @@ int msm_camera_power_down(struct msm_camera_power_ctrl_t *ctrl,
 				pr_err("ERR:%s Error while disabling VREG GPIO\n",
 					__func__);
 			break;
+		case SENSOR_PMIC:
+			if (ctrl->ois_en_gpio > 0 &&
+			    pd->seq_val == SENSOR_PMIC_GPIO_OIS)
+				gpio_direction_output(ctrl->ois_en_gpio,
+					(int) pd->config_val);
+			break;
 		case SENSOR_I2C_MUX:
 			if (ctrl->i2c_conf && ctrl->i2c_conf->use_i2c_mux)
 				msm_camera_disable_i2c_mux(ctrl->i2c_conf);
@@ -1770,6 +1792,10 @@ int msm_camera_power_down(struct msm_camera_power_ctrl_t *ctrl,
 	msm_camera_request_gpio_table(
 		ctrl->gpio_conf->cam_gpio_req_tbl,
 		ctrl->gpio_conf->cam_gpio_req_tbl_size, 0);
+	if (ctrl->ois_en_gpio > 0) {
+		gpio_direction_output(ctrl->ois_en_gpio, 0);
+		gpio_free(ctrl->ois_en_gpio);
+	}
 	CDBG("%s exit\n", __func__);
 	return 0;
 }

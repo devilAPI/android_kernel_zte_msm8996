@@ -110,6 +110,8 @@ struct msm_camera_power_ctrl_t {
 	struct msm_pinctrl_info pinctrl_info;
 	uint8_t cam_pinctrl_status;
 	size_t clk_info_size;
+	/* axon7: OIS enable GPIO (qcom,platform-ois-en-gpio), <= 0 = none */
+	int ois_en_gpio;
 };
 
 enum msm_camera_actuator_name {
