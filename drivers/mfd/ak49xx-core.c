@@ -871,7 +871,10 @@ static int ak49xx_device_init(struct ak49xx *ak49xx)
 				ak49xx_reg_read, ak49xx_reg_write,
 				ak49xx_bulk_read, ak49xx_bulk_write);
 
-	if (ak49xx_core_irq_init(&ak49xx->core_res))
+	/* -EPROBE_DEFER until the ak49xx irq controller is up: pass it on
+	 * (it used to return the device code, 0x61, as the error) */
+	ret = ak49xx_core_irq_init(&ak49xx->core_res);
+	if (ret)
 		goto err;
 
 	if (ak49xx->dev) {

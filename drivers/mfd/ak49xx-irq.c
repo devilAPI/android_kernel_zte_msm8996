@@ -486,7 +486,7 @@ static int ak49xx_map_irq(
 	return phyirq_to_virq(ak49xx_res, irq);
 }
 #else
-int __init ak49xx_irq_of_init(struct device_node *node,
+int ak49xx_irq_of_init(struct device_node *node,
 		struct device_node *parent)
 {
 	struct ak49xx_irq_drv_data *data;
@@ -666,6 +666,16 @@ static int ak49xx_irq_probe(struct platform_device *pdev)
 		}
 		dev_err(&pdev->dev, "%s: virq = %d\n", __func__, irq);
 		domain = irq_find_host(pdev->dev.of_node);
+		if (!domain) {
+			/*
+			 * 4.4: IRQCHIP_DECLARE does not run for this node (its parent,
+			 * the TLMM, is a platform driver here), so make the domain now.
+			 */
+			ret = ak49xx_irq_of_init(pdev->dev.of_node, NULL);
+			if (ret)
+				return ret;
+			domain = irq_find_host(pdev->dev.of_node);
+		}
 		if (unlikely(!domain)) {
 			pr_err("%s: domain is NULL", __func__);
 			return -EINVAL;
