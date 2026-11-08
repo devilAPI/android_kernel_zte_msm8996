@@ -76,6 +76,7 @@ enum msm_vfe_frame_skip_pattern {
 	EVERY_6FRAME,
 	EVERY_7FRAME,
 	EVERY_8FRAME,
+	EVERY_10FRAME,	/* ZTE 3.18 camera ABI */
 	EVERY_16FRAME,
 	EVERY_32FRAME,
 	SKIP_ALL,
@@ -457,6 +458,7 @@ enum msm_vfe_reg_cfg_type {
 	VFE_HW_UPDATE_UNLOCK,
 	SET_WM_UB_SIZE,
 	SET_UB_POLICY,
+	GET_VFE_HW_LIMIT,	/* ZTE 3.18 camera ABI */
 };
 
 struct msm_vfe_cfg_cmd2 {
@@ -907,12 +909,27 @@ enum msm_isp_ioctl_cmd_code {
 	MSM_ISP_SET_DUAL_HW_MASTER_SLAVE,
 	MSM_ISP_MAP_BUF_START_FE,
 	MSM_ISP_UNMAP_BUF,
-	MSM_ISP_AHB_CLK_CFG,
-	MSM_ISP_DUAL_HW_MASTER_SLAVE_SYNC,
+	/* ZTE 3.18 camera ABI (axon7 blobs): its order from here on */
 	MSM_ISP_FETCH_ENG_MULTI_PASS_START,
 	MSM_ISP_MAP_BUF_START_MULTI_PASS_FE,
+	MSM_ISP_CFG_HW_STATE,
+	MSM_ISP_AHB_CLK_CFG,
+	MSM_ISP_UPDATE_FE_FRAME_ID,
+	MSM_ISP_RESTART_FE,
+	MSM_ISP32_REQUEST_STREAM,
+	/* 4.4 only */
+	MSM_ISP_DUAL_HW_MASTER_SLAVE_SYNC,
 	MSM_ISP_REQUEST_BUF_VER2,
 	MSM_ISP_DUAL_HW_LPM_MODE,
+};
+
+/* ZTE 3.18 camera ABI: accepted as no-ops (bandwidth is voted per stream) */
+struct msm_vfe_update_fe_frame_id {
+	uint32_t frame_id;
+};
+
+struct msm_vfe_restart_fe_cmd {
+	uint32_t restart_fe;
 };
 
 #define VIDIOC_MSM_VFE_REG_CFG \
@@ -1017,6 +1034,18 @@ enum msm_isp_ioctl_cmd_code {
 
 #define VIDIOC_MSM_ISP_AHB_CLK_CFG \
 	_IOWR('V', MSM_ISP_AHB_CLK_CFG, struct msm_isp_ahb_clk_cfg)
+
+#define VIDIOC_MSM_ISP_CFG_HW_STATE \
+	_IOWR('V', MSM_ISP_CFG_HW_STATE, \
+		struct msm_vfe_axi_stream_cfg_cmd)
+
+#define VIDIOC_MSM_ISP_UPDATE_FE_FRAME_ID \
+	_IOWR('V', MSM_ISP_UPDATE_FE_FRAME_ID, \
+		struct msm_vfe_update_fe_frame_id)
+
+#define VIDIOC_MSM_ISP_RESTART_FE \
+	_IOWR('V', MSM_ISP_RESTART_FE, \
+		struct msm_vfe_restart_fe_cmd)
 
 #define VIDIOC_MSM_ISP_DUAL_HW_MASTER_SLAVE_SYNC \
 	_IOWR('V', MSM_ISP_DUAL_HW_MASTER_SLAVE_SYNC, \

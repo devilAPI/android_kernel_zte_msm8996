@@ -189,6 +189,8 @@ uint32_t msm_isp_get_framedrop_period(
 	case EVERY_7FRAME:
 	case EVERY_8FRAME:
 		return frame_skip_pattern + 1;
+	case EVERY_10FRAME:
+		return 10;
 	case EVERY_16FRAME:
 		return 16;
 		break;
@@ -947,6 +949,12 @@ static long msm_isp_ioctl_unlocked(struct v4l2_subdev *sd,
 		rc = msm_isp_cfg_input(vfe_dev, arg);
 		mutex_unlock(&vfe_dev->core_mutex);
 		break;
+	case VIDIOC_MSM_ISP_CFG_HW_STATE:
+	case VIDIOC_MSM_ISP_UPDATE_FE_FRAME_ID:
+	case VIDIOC_MSM_ISP_RESTART_FE:
+		/* ZTE 3.18 ABI: no-ops here (4.4 votes bandwidth per stream) */
+		rc = 0;
+		break;
 	case VIDIOC_MSM_ISP_AHB_CLK_CFG:
 		mutex_lock(&vfe_dev->core_mutex);
 		if (vfe_dev->hw_info->vfe_ops.core_ops.ahb_clk_cfg)
@@ -1441,6 +1449,13 @@ static int msm_isp_send_hw_cmd(struct vfe_device *vfe_dev,
 			return -EINVAL;
 		}
 		vfe_dev->vfe_ub_policy = *cfg_data;
+		break;
+	}
+	case GET_VFE_HW_LIMIT: {
+		/* ZTE 3.18 ABI: optional DT limit, not set on the axon7 */
+		if (cmd_len < sizeof(uint32_t))
+			return -EINVAL;
+		*cfg_data = 0;
 		break;
 	}
 	}
