@@ -321,7 +321,7 @@ int ak49xx_ram_write(struct ak49xx *ak49xx, u8 vat, u8 page,
 	} else if (ak49xx_intf == AK49XX_INTERFACE_TYPE_SPI ||
 		ak49xx_intf == AK49XX_INTERFACE_TYPE_SLIMBUS_SPI) {
 
-		ret = spi_write(ak49xx_spi, buf, count);
+		ret = !ak49xx_spi ? -ENODEV : spi_write(ak49xx_spi, buf, count);
 		if (ret) {
 			pr_err("failed to write ram data in SPI mode.\n");
 		}
@@ -358,7 +358,7 @@ int ak49xx_run_ram_write(struct ak49xx *ak49xx, u8 *buf)
 
 	} else if (ak49xx_intf == AK49XX_INTERFACE_TYPE_SPI || ak49xx_intf == AK49XX_INTERFACE_TYPE_SLIMBUS_SPI) {
 
-		ret += spi_write(ak49xx_spi, buf, buf[3] * 3 + 9);
+		ret += !ak49xx_spi ? -ENODEV : spi_write(ak49xx_spi, buf, buf[3] * 3 + 9);
 		ret += ak49xx_write(ak49xx, CRAM_RUN_EXE, 1, &runc, false);
 
 		if (ret) {
@@ -389,7 +389,7 @@ int ak49xx_cram_read(unsigned short reg,
 	if (ak49xx_intf == AK49XX_INTERFACE_TYPE_SPI ||
 		ak49xx_intf == AK49XX_INTERFACE_TYPE_SLIMBUS_SPI) {
 
-		ret = spi_write_then_read(ak49xx_spi, tx, 3, d, bytes);
+		ret = !ak49xx_spi ? -ENODEV : spi_write_then_read(ak49xx_spi, tx, 3, d, bytes);
 		if (ret != 0) {
 			pr_err("failed to read ak49xx cram\n");
 		}
@@ -493,7 +493,7 @@ static int ak49xx_spi_read_device(unsigned short reg,
 	tx[0] = 0x01;
 	tx[1] = reg >> 8;
 	tx[2] = reg & 0xFF;
-	ret = spi_write_then_read(ak49xx_spi, tx, 3, d, bytes);
+	ret = !ak49xx_spi ? -ENODEV : spi_write_then_read(ak49xx_spi, tx, 3, d, bytes);
 	if (ret != 0) {
 		pr_err("failed to read ak49xx register\n");
 		return ret;
@@ -512,7 +512,7 @@ static int ak49xx_spi_write_device(unsigned short reg,
 	tx[2] = reg & 0xFF;
 	memcpy(tx + 3, src, bytes);
 
-	ret = spi_write(ak49xx_spi, tx, bytes + 3);
+	ret = !ak49xx_spi ? -ENODEV : spi_write(ak49xx_spi, tx, bytes + 3);
 	if (ret != 0) {
 		pr_err("[LHS]failed to write ak49xx register\n");
 		return ret;
