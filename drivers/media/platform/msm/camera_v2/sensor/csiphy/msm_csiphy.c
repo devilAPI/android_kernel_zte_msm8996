@@ -286,7 +286,7 @@ static int msm_csiphy_3phase_lane_config(
 		}
 
 		if ((csiphy_dev->hw_version == CSIPHY_VERSION_V35) &&
-			(csiphy_params->data_rate > two_gbps)) {
+			(0 /* axon7: no data_rate in the ZTE ABI */ > two_gbps)) {
 			msm_camera_io_w(0x40,
 				csiphybase +
 				csiphy_dev->ctrl_reg->csiphy_3ph_reg.
@@ -812,7 +812,7 @@ static int msm_csiphy_lane_config(struct csiphy_device *csiphy_dev,
 	CDBG("%s csiphy_params, mask = 0x%x cnt = %d, data rate = %llu\n",
 		__func__,
 		csiphy_params->lane_mask,
-		csiphy_params->lane_cnt, csiphy_params->data_rate);
+		csiphy_params->lane_cnt, 0ULL);
 	CDBG("%s csiphy_params, settle cnt = 0x%x csid %d\n",
 		__func__, csiphy_params->settle_cnt,
 		csiphy_params->csid_core);

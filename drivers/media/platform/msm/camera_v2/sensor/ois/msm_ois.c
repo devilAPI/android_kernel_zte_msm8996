@@ -252,6 +252,26 @@ static int32_t msm_ois_write_settings(struct msm_ois_ctrl_t *o_ctrl,
 				break;
 			}
 		}
+			break;
+		/* axon7: ZTE's register read for CFG_OIS_READ */
+		case MSM_OIS_READ: {
+			uint16_t read_data = 0;
+
+			switch (settings[i].data_type) {
+			case MSM_CAMERA_I2C_BYTE_DATA:
+			case MSM_CAMERA_I2C_WORD_DATA:
+				rc = o_ctrl->i2c_client.i2c_func_tbl
+					->i2c_read(&o_ctrl->i2c_client,
+					settings[i].reg_addr, &read_data,
+					settings[i].data_type);
+				settings[i].reg_data = read_data;
+				break;
+			default:
+				pr_err("Unsupport data type: %d\n",
+					settings[i].data_type);
+				break;
+			}
+		}
 		}
 
 		if (rc < 0)
@@ -439,6 +459,68 @@ error_alloc_workqueue:
 	return rc;
 }
 
+/* axon7: from ZTE's 3.18 msm_ois.c */
+static int msm_ois_deinit(struct msm_ois_ctrl_t *o_ctrl)
+{
+	int rc = 0;
+
+	if (!o_ctrl)
+		return -EINVAL;
+	/* called from msm_ois_config with ois_mutex held */
+	if (o_ctrl->ois_device_type == MSM_CAMERA_PLATFORM_DEVICE &&
+		o_ctrl->ois_state == OIS_OPS_ACTIVE) {
+		rc = o_ctrl->i2c_client.i2c_func_tbl->i2c_util(
+			&o_ctrl->i2c_client, MSM_CCI_RELEASE);
+		if (rc < 0)
+			pr_err("cci_deinit failed\n");
+	}
+	o_ctrl->ois_state = OIS_OPS_INACTIVE;
+	return rc;
+}
+
+static int32_t msm_ois_read(struct msm_ois_ctrl_t *o_ctrl,
+	struct msm_ois_set_info_t *set_info)
+{
+	struct reg_settings_ois_t *settings = NULL;
+	int32_t rc = 0;
+	struct msm_camera_cci_client *cci_client = NULL;
+
+	if (o_ctrl->ois_device_type == MSM_CAMERA_PLATFORM_DEVICE) {
+		cci_client = o_ctrl->i2c_client.cci_client;
+		cci_client->sid = set_info->ois_params.i2c_addr >> 1;
+		cci_client->retries = 3;
+		cci_client->id_map = 0;
+		cci_client->cci_i2c_master = o_ctrl->cci_master;
+		cci_client->i2c_freq_mode = set_info->ois_params.i2c_freq_mode;
+	} else {
+		o_ctrl->i2c_client.client->addr = set_info->ois_params.i2c_addr;
+	}
+	o_ctrl->i2c_client.addr_type = MSM_CAMERA_I2C_WORD_ADDR;
+
+	if (set_info->ois_params.setting_size > 0 &&
+		set_info->ois_params.setting_size < MAX_OIS_REG_SETTINGS) {
+		settings = kmalloc(sizeof(struct reg_settings_ois_t) *
+			(set_info->ois_params.setting_size), GFP_KERNEL);
+		if (settings == NULL)
+			return -EFAULT;
+		if (copy_from_user(settings,
+			(void __user *)set_info->ois_params.settings,
+			set_info->ois_params.setting_size *
+			sizeof(struct reg_settings_ois_t))) {
+			kfree(settings);
+			return -EFAULT;
+		}
+		rc = msm_ois_write_settings(o_ctrl,
+			set_info->ois_params.setting_size, settings);
+		if (copy_to_user((void __user *)set_info->ois_params.settings,
+			settings, set_info->ois_params.setting_size *
+			sizeof(struct reg_settings_ois_t)))
+			rc = -EFAULT;
+		kfree(settings);
+	}
+	return rc;
+}
+
 static int32_t msm_ois_control(struct msm_ois_ctrl_t *o_ctrl,
 	struct msm_ois_set_info_t *set_info)
 {
@@ -577,8 +659,16 @@ static int32_t msm_ois_config(struct msm_ois_ctrl_t *o_ctrl,
 		kfree(reg_setting);
 		break;
 	}
-	case CFG_OIS_CALIBRATION:
-		fadj_ois_gyro_offset_calibraion();
+	/* axon7: ZTE's 3.18 OIS commands (the camera daemon uses them) */
+	case CFG_OIS_DEINIT:
+		rc = msm_ois_deinit(o_ctrl);
+		if (rc < 0)
+			pr_err("msm_ois_deinit failed %d\n", rc);
+		break;
+	case CFG_OIS_READ:
+		rc = msm_ois_read(o_ctrl, &(cdata->cfg.set_info));
+		if (rc < 0)
+			pr_err("Failed ois read%d\n", rc);
 		break;
 	default:
 		break;
@@ -888,6 +978,7 @@ static long msm_ois_subdev_do_ioctl(
 		ois_data.cfgtype = u32->cfgtype;
 
 		switch (u32->cfgtype) {
+		case CFG_OIS_READ:
 		case CFG_OIS_CONTROL:
 			ois_data.cfg.set_info.ois_params.setting_size =
 				u32->cfg.set_info.ois_params.setting_size;

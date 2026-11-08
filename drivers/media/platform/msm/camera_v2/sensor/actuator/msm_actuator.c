@@ -1559,6 +1559,72 @@ static int msm_actuator_init(struct msm_actuator_ctrl_t *a_ctrl)
 	return rc;
 }
 
+/* axon7: ZTE's 3.18 actuator commands (CCI parameters, register access) */
+static int msm_actuator_cci_set(struct msm_actuator_ctrl_t *a_ctrl,
+				struct msm_actuator_cci_params_t *set_info)
+{
+	struct msm_camera_cci_client *cci_client = NULL;
+
+	if (a_ctrl->act_device_type == MSM_CAMERA_PLATFORM_DEVICE) {
+		cci_client = a_ctrl->i2c_client.cci_client;
+		cci_client->sid = set_info->i2c_addr >> 1;
+		cci_client->retries = 3;
+		cci_client->id_map = 0;
+		cci_client->cci_i2c_master = a_ctrl->cci_master;
+		cci_client->i2c_freq_mode = set_info->i2c_freq_mode;
+	} else {
+		a_ctrl->i2c_client.client->addr = set_info->i2c_addr;
+	}
+	a_ctrl->i2c_data_type = set_info->i2c_data_type;
+	a_ctrl->i2c_client.addr_type = set_info->i2c_addr_type;
+	return 0;
+}
+
+static int msm_actuator_register_read(struct msm_actuator_ctrl_t *a_ctrl,
+				struct reg_settings_t *reg_info)
+{
+	int32_t rc;
+	uint16_t temp = 0;
+
+	if (a_ctrl->actuator_state != ACT_OPS_ACTIVE)
+		return -1;
+	rc = a_ctrl->i2c_client.i2c_func_tbl->i2c_read(&a_ctrl->i2c_client,
+			reg_info->reg_addr, &temp, reg_info->data_type);
+	if (rc < 0) {
+		pr_err("%s:%d: i2c read failed\n", __func__, __LINE__);
+		return rc;
+	}
+	if (reg_info->delay > 20)
+		msleep(reg_info->delay);
+	else if (reg_info->delay != 0)
+		usleep_range(reg_info->delay * 1000,
+			(reg_info->delay * 1000) + 1000);
+	reg_info->reg_data = temp;
+	return rc;
+}
+
+static int msm_actuator_register_write(struct msm_actuator_ctrl_t *a_ctrl,
+				struct reg_settings_t *reg_info)
+{
+	int32_t rc;
+
+	if (a_ctrl->actuator_state != ACT_OPS_ACTIVE)
+		return -1;
+	rc = a_ctrl->i2c_client.i2c_func_tbl->i2c_write(&a_ctrl->i2c_client,
+			reg_info->reg_addr, reg_info->reg_data,
+			reg_info->data_type);
+	if (rc < 0) {
+		pr_err("%s:%d: i2c write failed\n", __func__, __LINE__);
+		return rc;
+	}
+	if (reg_info->delay > 20)
+		msleep(reg_info->delay);
+	else if (reg_info->delay != 0)
+		usleep_range(reg_info->delay * 1000,
+			(reg_info->delay * 1000) + 1000);
+	return rc;
+}
+
 static int32_t msm_actuator_config(struct msm_actuator_ctrl_t *a_ctrl,
 	void __user *argp)
 {
@@ -1631,6 +1697,22 @@ static int32_t msm_actuator_config(struct msm_actuator_ctrl_t *a_ctrl,
 		rc = msm_actuator_power_up(a_ctrl);
 		if (rc < 0)
 			pr_err("Failed actuator power up%d\n", rc);
+		break;
+
+	case CFG_ACTUATOR_CCI_INFO:
+		rc = msm_actuator_cci_set(a_ctrl, &cdata->cfg.cci_info);
+		if (rc < 0)
+			pr_err("init table failed %d\n", rc);
+		break;
+	case CFG_ACTUATOR_REGISTER_READ:
+		rc = msm_actuator_register_read(a_ctrl, &cdata->cfg.reg_info);
+		if (rc < 0)
+			pr_err("Failed actuator register read %d\n", rc);
+		break;
+	case CFG_ACTUATOR_REGISTER_WRITER:
+		rc = msm_actuator_register_write(a_ctrl, &cdata->cfg.reg_info);
+		if (rc < 0)
+			pr_err("Failed actuator register write %d\n", rc);
 		break;
 
 	default:
@@ -1868,6 +1950,22 @@ static long msm_actuator_subdev_do_ioctl(
 			memcpy(&actuator_data.cfg.setpos, &(u32->cfg.setpos),
 				sizeof(struct msm_actuator_set_position_t));
 			break;
+		case CFG_ACTUATOR_CCI_INFO:
+			actuator_data.cfgtype = u32->cfgtype;
+			actuator_data.cfg.cci_info.i2c_addr = u32->cfg.cci_info.i2c_addr;
+			actuator_data.cfg.cci_info.i2c_freq_mode = u32->cfg.cci_info.i2c_freq_mode;
+			actuator_data.cfg.cci_info.i2c_addr_type = u32->cfg.cci_info.i2c_addr_type;
+			actuator_data.cfg.cci_info.i2c_data_type = u32->cfg.cci_info.i2c_data_type;
+			break;
+		case CFG_ACTUATOR_REGISTER_READ:
+		case CFG_ACTUATOR_REGISTER_WRITER:
+			actuator_data.cfgtype = u32->cfgtype;
+			actuator_data.cfg.reg_info.reg_addr = u32->cfg.reg_info.reg_addr;
+			actuator_data.cfg.reg_info.addr_type = u32->cfg.reg_info.addr_type;
+			actuator_data.cfg.reg_info.reg_data = u32->cfg.reg_info.reg_data;
+			actuator_data.cfg.reg_info.data_type = u32->cfg.reg_info.data_type;
+			actuator_data.cfg.reg_info.delay = u32->cfg.reg_info.delay;
+			break;
 		default:
 			actuator_data.cfgtype = u32->cfgtype;
 			parg = &actuator_data;
@@ -1891,6 +1989,11 @@ static long msm_actuator_subdev_do_ioctl(
 		case CFG_MOVE_FOCUS:
 			u32->cfg.move.curr_lens_pos =
 				actuator_data.cfg.move.curr_lens_pos;
+			break;
+		case CFG_ACTUATOR_REGISTER_READ:
+		case CFG_ACTUATOR_REGISTER_WRITER:
+			u32->cfg.reg_info.reg_data =
+				actuator_data.cfg.reg_info.reg_data;
 			break;
 		default:
 			break;

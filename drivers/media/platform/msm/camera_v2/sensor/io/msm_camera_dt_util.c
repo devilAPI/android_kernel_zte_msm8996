@@ -127,7 +127,7 @@ int msm_camera_fill_vreg_params(struct camera_vreg_t *cam_vreg,
 			}
 			break;
 
-		case CAM_VMIPI:
+		case 0xFFFF: /* axon7: no CAM_VMIPI in the ZTE camera ABI (never matches) */
 			for (j = 0; j < num_vreg; j++) {
 				if (!strcmp(cam_vreg[j].reg_name, "cam_vmipi")) {
 					CDBG("%s:%d i %d j %d cam_vmipi\n",
@@ -598,8 +598,7 @@ int msm_camera_get_dt_power_setting_data(struct device_node *of_node,
 				ps[i].seq_val = SENSOR_GPIO_CUSTOM1;
 			else if (!strcmp(seq_name, "sensor_gpio_custom2"))
 				ps[i].seq_val = SENSOR_GPIO_CUSTOM2;
-			else if (!strcmp(seq_name, "sensor_gpio_custom3"))
-				ps[i].seq_val = SENSOR_GPIO_CUSTOM3;
+			/* axon7: no sensor_gpio_custom3 in the ZTE camera ABI */
 			else
 				rc = -EILSEQ;
 			break;
@@ -1118,11 +1117,7 @@ int msm_camera_init_gpio_pin_tbl(struct device_node *of_node,
 			rc = -EINVAL;
 			goto ERROR;
 		}
-		gconf->gpio_num_info->gpio_num[SENSOR_GPIO_CUSTOM3] =
-			gpio_array[val];
-		gconf->gpio_num_info->valid[SENSOR_GPIO_CUSTOM3] = 1;
-		CDBG("%s qcom,gpio-custom3 %d\n", __func__,
-			gconf->gpio_num_info->gpio_num[SENSOR_GPIO_CUSTOM3]);
+		/* axon7: no SENSOR_GPIO_CUSTOM3 in the ZTE camera ABI */
 	} else {
 		rc = 0;
 	}

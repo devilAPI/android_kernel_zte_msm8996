@@ -311,10 +311,9 @@ static int32_t msm_sensor_fill_laser_led_subdevid_by_name(
 	if (!of_node)
 		return -EINVAL;
 
-	sensor_info = s_ctrl->sensordata->sensor_info;
-	laser_led_subdev_id = &sensor_info->subdev_id[SUB_MODULE_LASER_LED];
-	/* set sudev id to -1 and try to found new id */
-	*laser_led_subdev_id = -1;
+	/* axon7: no laser LED sub-module in the ZTE camera ABI */
+	(void)sensor_info; (void)laser_led_subdev_id; (void)src_node; (void)val;
+	return 0;
 
 
 	src_node = of_parse_phandle(of_node, "qcom,laserled-src", 0);

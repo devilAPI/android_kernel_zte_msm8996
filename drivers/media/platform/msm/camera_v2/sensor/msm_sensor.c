@@ -794,6 +794,30 @@ static int msm_sensor_config32(struct msm_sensor_ctrl_t *s_ctrl,
 			rc = -EFAULT;
 		}
 		break;
+	/* axon7: ZTE's 3.18 CFG_POWER_RESET (the camera daemon uses it) */
+	case CFG_POWER_RESET:
+		if (s_ctrl->is_csid_tg_mode)
+			goto DONE;
+		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP) {
+			pr_err("%s:%d failed: invalid state %d\n", __func__,
+				__LINE__, s_ctrl->sensor_state);
+			rc = -EFAULT;
+			break;
+		}
+		if (s_ctrl->func_tbl->sensor_power_down &&
+			s_ctrl->func_tbl->sensor_power_up) {
+			rc = s_ctrl->func_tbl->sensor_power_down(s_ctrl);
+			if (rc >= 0)
+				rc = s_ctrl->func_tbl->sensor_power_up(s_ctrl);
+			if (rc < 0) {
+				s_ctrl->sensor_state = MSM_SENSOR_POWER_DOWN;
+				pr_err("%s:%d power reset failed rc %d\n",
+					__func__, __LINE__, rc);
+			}
+		} else {
+			rc = -EFAULT;
+		}
+		break;
 	case CFG_POWER_DOWN:
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
@@ -1286,6 +1310,30 @@ int msm_sensor_config(struct msm_sensor_ctrl_t *s_ctrl, void __user *argp)
 		}
 		break;
 
+	/* axon7: ZTE's 3.18 CFG_POWER_RESET (the camera daemon uses it) */
+	case CFG_POWER_RESET:
+		if (s_ctrl->is_csid_tg_mode)
+			goto DONE;
+		if (s_ctrl->sensor_state != MSM_SENSOR_POWER_UP) {
+			pr_err("%s:%d failed: invalid state %d\n", __func__,
+				__LINE__, s_ctrl->sensor_state);
+			rc = -EFAULT;
+			break;
+		}
+		if (s_ctrl->func_tbl->sensor_power_down &&
+			s_ctrl->func_tbl->sensor_power_up) {
+			rc = s_ctrl->func_tbl->sensor_power_down(s_ctrl);
+			if (rc >= 0)
+				rc = s_ctrl->func_tbl->sensor_power_up(s_ctrl);
+			if (rc < 0) {
+				s_ctrl->sensor_state = MSM_SENSOR_POWER_DOWN;
+				pr_err("%s:%d power reset failed rc %d\n",
+					__func__, __LINE__, rc);
+			}
+		} else {
+			rc = -EFAULT;
+		}
+		break;
 	case CFG_POWER_DOWN:
 		if (s_ctrl->is_csid_tg_mode)
 			goto DONE;
