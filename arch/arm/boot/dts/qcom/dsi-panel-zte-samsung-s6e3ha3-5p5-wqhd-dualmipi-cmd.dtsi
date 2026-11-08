@@ -86,6 +86,13 @@
 		qcom,mdss-mdp-transfer-time-us = <12500>;
 		qcom,mdss-dsi-lp11-init;
 		qcom,mdss-dsi-bl-pmic-control-type ="bl_ctrl_dcs";
+		/*
+		 * Brightness (DCS 0x51) in high-speed mode: the panel ignores LP
+		 * commands (ZTE's 3.18 driver hardcoded CMD_REQ_HS_MODE for it).
+		 * In LP mode the slider did nothing, and after a wake each half
+		 * kept its own reset brightness (the on-commands have no 0x51).
+		 */
+		qcom,mdss-dsi-bl-dcs-command-state = "dsi_hs_mode";
 		qcom,mdss-dsi-bl-min-level = <1>;
 		qcom,mdss-dsi-bl-max-level = <255>;
 		qcom,mdss-dsi-on-command = [
