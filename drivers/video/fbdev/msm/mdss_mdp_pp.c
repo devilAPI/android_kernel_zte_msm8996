@@ -2385,7 +2385,20 @@ static void pp_dspp_opmode_config(struct mdss_mdp_ctl *ctl, u32 num,
 		*opmode |= MDSS_MDP_DSPP_OP_ARGC_LUT_EN;
 }
 
-static unsigned int axon7_dspp_clear[2];
+/*
+ * Axon 7: DSPP op-mode bits that are never enabled (per DSPP, DSPP0 = left
+ * half, DSPP1 = right half; writable for debugging). Six-zone colour
+ * adjustment (bits 29-31, set by ZTE's QDCM calibration) is off: its LUT
+ * loses its contents when MDSS powers down during sleep and the resume
+ * path does not reload it, which turned saturated colours into rainbow
+ * blocks after a wake, differently on each half.
+ */
+#define AXON7_SIX_ZONE_BITS	(MDSS_MDP_DSPP_OP_PA_SIX_ZONE_HUE_MASK | \
+				 MDSS_MDP_DSPP_OP_PA_SIX_ZONE_SAT_MASK | \
+				 MDSS_MDP_DSPP_OP_PA_SIX_ZONE_VAL_MASK)
+static unsigned int axon7_dspp_clear[2] = {
+	AXON7_SIX_ZONE_BITS, AXON7_SIX_ZONE_BITS
+};
 module_param_array_named(axon7_dspp_clear, axon7_dspp_clear, uint, NULL, 0644);
 
 static int pp_dspp_setup(u32 disp_num, struct mdss_mdp_mixer *mixer,
