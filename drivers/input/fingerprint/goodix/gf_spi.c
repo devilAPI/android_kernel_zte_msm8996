@@ -678,6 +678,8 @@ static int gf_probe(struct platform_device *pdev)
 					   "gf", gf_dev);
 		if (!ret) {
 			enable_irq_wake(gf_dev->irq);
+			/* request_threaded_irq() leaves it enabled */
+			gf_dev->irq_enabled = 1;
 			gf_disable_irq(gf_dev);
 		}
 	}
