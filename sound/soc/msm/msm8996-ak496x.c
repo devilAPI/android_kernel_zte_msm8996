@@ -2669,12 +2669,19 @@ static struct snd_soc_dai_link msm8996_common_dai_links[] = {
 		.be_id = MSM_FRONTEND_DAI_MULTIMEDIA15,
 	},
 	{
+		/*
+		 * 4.4: MultiMedia16 is a PCM front end (ULL NOIRQ_2 in msm8996.c),
+		 * not a compress DAI; with msm-compress-dsp, msm_compr_new() ran
+		 * without a compress runtime and oopsed. Same slot, so the PCM
+		 * device numbers stay as they were.
+		 */
 		.name = "MSM8996 Compress9",
 		.stream_name = "Compress9",
 		.cpu_dai_name = "MultiMedia16",
-		.platform_name = "msm-compress-dsp",
+		.platform_name = "msm-pcm-dsp-noirq",
 		.dynamic = 1,
 		.dpcm_playback = 1,
+		.dpcm_capture = 1,
 		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
 			 SND_SOC_DPCM_TRIGGER_POST},
 		.codec_dai_name = "snd-soc-dummy-dai",
