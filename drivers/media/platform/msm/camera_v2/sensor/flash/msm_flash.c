@@ -14,6 +14,7 @@
 #define pr_fmt(fmt) "%s:%d " fmt, __func__, __LINE__
 
 #include <linux/module.h>
+#include <linux/delay.h>
 #include <linux/of_gpio.h>
 #include <linux/leds-qpnp-flash.h>
 #include "msm_flash.h"
@@ -58,13 +59,22 @@ static int axon7_torch_pct_set(const char *val, const struct kernel_param *kp)
 		return -EINVAL;
 	mutex_lock(&axon7_torch_lock);
 	axon7_torch_pct = v;
-	if (axon7_torch_ctrl)
-		for (i = 0; i < axon7_torch_ctrl->torch_num_sources; i++)
-			if (axon7_torch_ctrl->torch_trigger[i] &&
-				axon7_torch_curr[i])
-				led_trigger_event(
-					axon7_torch_ctrl->torch_trigger[i],
+	if (axon7_torch_ctrl) {
+		struct msm_flash_ctrl_t *c = axon7_torch_ctrl;
+
+		/*
+		 * The PMI8994 takes a new torch current only when the torch is
+		 * switched on: off, let the (queued) LED work run, then on.
+		 */
+		for (i = 0; i < c->torch_num_sources; i++)
+			if (c->torch_trigger[i] && axon7_torch_curr[i])
+				led_trigger_event(c->torch_trigger[i], 0);
+		msleep(30);
+		for (i = 0; i < c->torch_num_sources; i++)
+			if (c->torch_trigger[i] && axon7_torch_curr[i])
+				led_trigger_event(c->torch_trigger[i],
 					axon7_torch_scale(axon7_torch_curr[i]));
+	}
 	mutex_unlock(&axon7_torch_lock);
 	return 0;
 }
